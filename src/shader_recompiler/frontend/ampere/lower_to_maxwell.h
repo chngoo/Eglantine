@@ -138,6 +138,16 @@ inline LoweredProgram LowerToMaxwellWith(std::span<const Instruction> code, u32 
             if (reg < 63) result.high_uniform_registers = (std::max)(result.high_uniform_registers, (reg - 26) & ~1U);
             return ~0U;
         };
+        // TEST ONLY: EDEN_DBG_HW_LEGACY=1 rejects the forms build-4 started lowering (LEA.HI with
+        // a constant, guarded USHF/UIADD3, G+B TLD, 8/16-bit LDL/STL), to compare with build-3.
+        if (static const bool legacy = std::getenv("EDEN_DBG_HW_LEGACY") != nullptr; legacy) {
+            const u32 op = insn.Bits(0, 12);
+            if ((op == 0xa11 && insn.Bits(80, 1)) || (op == 0x899 && insn.Bits(12, 4) != 7) ||
+                ((op == 0x290 || op == 0x890) && insn.Bits(12, 4) != 7) ||
+                (op == 0xb66 && insn.Bits(64, 8) == 255 && (insn.Bits(72, 4) == 5 || insn.Bits(72, 4) == 6)) ||
+                ((op == 0x387 || op == 0x983) && insn.Bits(73, 3) < 4))
+                return fail(index, "EDEN_DBG_HW_LEGACY");
+        }
         bool rewritten_uniform = false;
         bool uniform_guard = false;
         u32 uniform_output = 7; // ULOP3's UPn output: computed in P(6-n), then merged into R239
