@@ -1432,6 +1432,11 @@ void MacroEngine::Execute(Core::System& system, Engines::Maxwell3D& maxwell3d, u
                             }
                         }
                     }
+                    // Switch 2 macros read occlusion reports here and set the render enable from
+                    // them (Mario Tennis Fever's characters). Results the host GPU has finished
+                    // reach guest memory only at the next fence: write them now, or the macro reads
+                    // a zero count and hides the object.
+                    memory.FlushRegion(source, read_bytes, VideoCommon::CacheType::QueryCache);
                     if (memory.IsMemoryDirty(source, read_bytes, VideoCommon::CacheType::BufferCache)) {
                         memory.FlushRegion(source, read_bytes, VideoCommon::CacheType::BufferCache);
                         static u64 flushes{};
